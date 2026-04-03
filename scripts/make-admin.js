@@ -8,7 +8,7 @@
  */
 
 var mongoose = require('mongoose');
-var _        = require('underscore');
+var _ = require('underscore');
 
 var email = process.argv[2];
 
@@ -22,12 +22,12 @@ if (!email) {
 require('../config/db');
 
 // Load User model and Roles
-var User  = require('../lib/models/user');
+var User = require('../lib/models/user');
 var Roles = require('../lib/models/roles');
 
 function makeAdmin() {
   // findByLogin searches by email or username
-  User.findByLogin(email.toLowerCase(), function(err, user) {
+  User.findByLogin(email.toLowerCase(), function (err, user) {
     if (err) {
       console.error('Database error:', err.message);
       process.exit(1);
@@ -45,50 +45,46 @@ function makeAdmin() {
       process.exit(0);
     }
 
-    // Get admin permissions from Roles
-    Roles.getPermissions('admin', function(err, permissions) {
-      if (err) {
-        console.error('Error getting permissions:', err.message);
-        process.exit(1);
-      }
+    Roles.getPermissions('admin')
+      .then(function (permissions) {
+        console.log('Got admin permissions');
 
-      // Find site context or create it
-      var siteRoleIndex = _.findIndex(user.roles, function(r) {
-        return r.context === 'site';
-      });
-
-      if (siteRoleIndex >= 0) {
-        // Add admin to existing site roles
-        if (user.roles[siteRoleIndex].roles.indexOf('admin') < 0) {
-          user.roles[siteRoleIndex].roles.push('admin');
-        }
-        // Merge permissions
-        user.roles[siteRoleIndex].permissions = _.union(
-          user.roles[siteRoleIndex].permissions || [],
-          permissions || []
-        );
-      } else {
-        // Create new site role entry
-        user.roles.push({
-          context: 'site',
-          roles: ['admin'],
-          permissions: permissions || [],
-          thru: {},
-          limits: {}
+        // Find site context or create it
+        var siteRoleIndex = _.findIndex(user.roles, function (r) {
+          return r.context === 'site';
         });
-      }
 
-      // Save the user
-      user.save(function(err, savedUser) {
-        if (err) {
-          console.error('Error saving user:', err.message);
-          process.exit(1);
+        if (siteRoleIndex >= 0) {
+          console.log('Found existing site role');
+          if (user.roles[siteRoleIndex].roles.indexOf('admin') < 0) {
+            user.roles[siteRoleIndex].roles.push('admin');
+          }
+          user.roles[siteRoleIndex].permissions = _.union(
+            user.roles[siteRoleIndex].permissions || [],
+            permissions || [],
+          );
+        } else {
+          console.log('creating new site role entry');
+          user.roles.push({
+            context: 'site',
+            roles: ['admin'],
+            permissions: permissions || [],
+            thru: {},
+            limits: {},
+          });
         }
+
+        return user.save();
+      })
+      .then(function (savedUser) {
         console.log('Success! User', savedUser.email, 'is now an admin.');
         console.log('They can access /admin after logging in.');
         process.exit(0);
+      })
+      .catch(function (err) {
+        console.error('Error:', err.message);
+        process.exit(1);
       });
-    });
   });
 }
 
@@ -99,7 +95,7 @@ if (mongoose.connection.readyState === 1) {
   mongoose.connection.once('open', makeAdmin);
 }
 
-mongoose.connection.on('error', function(err) {
+mongoose.connection.on('error', function (err) {
   console.error('MongoDB connection error:', err.message);
   console.error('Make sure MongoDB is running.');
   process.exit(1);
