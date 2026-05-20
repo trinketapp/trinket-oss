@@ -9,7 +9,7 @@
       <li class="side-nav-heading">
         <h4>Settings</h4>
       </li>
-    {% set pages = ['Profile', 'Email', 'Password', 'Trinket-Editor', 'Data', 'Delete-Account'] %}
+    {% set pages = ['Profile', 'Email', 'Password', 'Trinket-Editor', 'Data', 'Import', 'Delete-Account'] %}
     {% for link in pages %}
       <li><a {% if page == link.toLowerCase() %}class="active"{% endif %} href="/account/{{ link | lower }}">{{ link | replace('-', ' ') }}</a></li>
     {% endfor %}
