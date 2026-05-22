@@ -6,10 +6,6 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: dinosmm/trinket
-
 jobs:
   build-and-push:
     name: Build and push Docker image
@@ -43,21 +39,4 @@ jobs:
             ghcr.io/dinosmm/trinket:latest
             ghcr.io/dinosmm/trinket:${{ github.sha }}
           cache-from: type=gha
-          cache-to: type=gha,mode=maxname: Docker Image CI
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-jobs:
-
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+          cache-to: type=gha,mode=max
