@@ -42,14 +42,14 @@
     <div ui-tree="outlineDragOptions" data-drag-delay="200">
       <ul ui-tree-nodes ng-model="course.lessons" data-type="lesson" class="outline-list lessons">
         <li class="outline-list-item lesson" ng-repeat="lesson in course.lessons" ui-tree-node data-type="lesson" ng-class="{isDraft:lesson.isDraft,past:lesson.isPast,current:lesson.isCurrent,future:lesson.isFuture}">
-          <div class="lesson-title angular-ui-tree-handle clearfix">
+          <div class="lesson-title angular-ui-tree-handle clearfix" ui-tree-handle>
             <i class="fa fa-bars"></i>
             <span class="lesson-name">{{ lesson.name }}</span>
             <div data-tooltip class="draft-circle in-aside right has-tip" title="Marked as draft" ng-if="lesson.isDraft">&nbsp;</div>
           </div>
           <ul ui-tree-nodes ng-model="lesson.materials" data-type="material" class="outline-list materials" ng-class="{isDraft:lesson.isDraft}">
             <li ng-repeat="material in lesson.materials" id="{{ lesson.slug }}-{{ material.slug }}" ui-tree-node data-type="material" class="outline-list-item material" ng-class="{past:material.isPast,current:material.isCurrent,future:material.isFuture}">
-              <div class="material-title angular-ui-tree-handle clearfix" ng-click="viewMaterial(material.slideIndex, true)">
+              <div class="material-title angular-ui-tree-handle clearfix" ui-tree-handle ng-click="viewMaterial(material.slideIndex, true)">
                 <!-- add title or tooltip with dates info? -->
                 <i ng-if="usingDates(material)" class="fa fa-fw fa-clock-o dates-active-icon"></i>
                 <!-- change icon depending on what kind of material this is -->
@@ -153,7 +153,7 @@
       </div>
       <ul ui-tree-nodes ng-model="course.lessons" data-type="edit-outline-lesson" class="outline-list edit-lessons">
         <li class="outline-list-item lesson" ng-repeat="lesson in course.lessons" ui-tree-node data-type="edit-outline-lesson" ng-class="{isDraft:lesson.isDraft}">
-          <div class="edit-lesson-title angular-ui-tree-handle clearfix">
+          <div class="edit-lesson-title angular-ui-tree-handle clearfix" ui-tree-handle>
             <i class="fa fa-bars"></i>
 
             <div data-tooltip class="draft-circle in-outline has-tip" title="Marked as draft" ng-if="lesson.isDraft">&nbsp;</div>
@@ -181,7 +181,7 @@
           </div>
           <ul ui-tree-nodes ng-model="lesson.materials" data-type="edit-outline-material" class="outline-list edit-materials" ng-class="{isDraft:lesson.isDraft}">
             <li ng-repeat="material in lesson.materials" ui-tree-node data-type="edit-outline-material" class="outline-list-item material">
-              <div ng-switch="material.type" class="edit-material-title angular-ui-tree-handle clearfix">
+              <div ng-switch="material.type" class="edit-material-title angular-ui-tree-handle clearfix" ui-tree-handle>
                 <i ng-switch-when="page" class="fa fa-file-text-o fa-fw"></i>
                 <!-- add title or tooltip with dates info? -->
                 <i ng-if="usingDates(material)" class="fa fa-fw fa-clock-o dates-active-icon"></i>
