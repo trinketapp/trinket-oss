@@ -1,0 +1,31 @@
+{
+  "name": "browser-python-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 3100",
+    "build": "vite build",
+    "build:archive": "node scripts/build-trinket-archive.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 3100",
+    "cf:dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.2",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/search": "^6.7.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.42.1",
+    "@playwright/test": "^1.60.0",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "skulpt": "^1.2.0",
+    "vite": "^7.3.3",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "wrangler": "^4.90.1"
+  }
+}
