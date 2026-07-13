@@ -1,0 +1,257 @@
+<div id="importAlert" class="alert-box alert hide" style="display:none">
+  <span id="importAlertMsg"></span>
+</div>
+<div id="importSuccess" class="alert-box success hide" style="display:none">
+  <span id="importSuccessMsg"></span>
+</div>
+
+<!-- Step 1: Trinkets -->
+<div class="row">
+  <div class="small-12 columns">
+    <h5>Step 1 — Import Trinkets</h5>
+    <p>Upload the <code>trinket-export-*.zip</code> file downloaded from the old server.
+       You can run this multiple times (once per author) before importing the course.</p>
+    <p><em>Already-imported trinkets are skipped automatically.</em></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="small-12 columns">
+    <label>Trinkets zip file
+      <input type="file" id="trinketZipInput" accept=".zip">
+    </label>
+    <label style="display:inline-block; margin-right:16px;">
+      <input type="checkbox" id="replaceExisting"> Replace existing trinkets
+    </label>
+    <button id="importTrinketsBtn" class="button primary" disabled>Import Trinkets</button>
+    <span id="trinketSpinner" style="display:none; margin-left:10px;">Uploading…</span>
+  </div>
+</div>
+
+<div id="trinketResult" style="display:none; margin-top:15px;">
+  <div class="row">
+    <div class="small-12 columns">
+      <h6>Import result</h6>
+      <table style="width:100%;">
+        <thead><tr><th>Imported</th><th>Updated</th><th>Skipped</th><th>Failed</th><th>Materials patched</th></tr></thead>
+        <tbody>
+          <tr>
+            <td id="trImported">–</td>
+            <td id="trUpdated">–</td>
+            <td id="trSkipped">–</td>
+            <td id="trFailed">–</td>
+            <td id="trPatched">–</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr style="margin:30px 0;">
+
+<!-- Step 2: Course -->
+<div class="row">
+  <div class="small-12 columns">
+    <h5>Step 2 — Import Course</h5>
+    <p>Upload the <code>*-md.zip</code> course file downloaded from the old server.
+       Trinket embed links are automatically rewritten to point to this server.</p>
+    <p><em>If any linked trinkets haven't been imported yet you'll see a warning and can
+       choose to continue anyway (old trinket.io URLs will be left intact until those
+       trinkets are imported later).</em></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="small-12 columns">
+    <label>Course name (optional — defaults to "Imported Course")
+      <input type="text" id="courseNameInput" placeholder="e.g. Introduction to Physics">
+    </label>
+    <label>Course zip file
+      <input type="file" id="courseZipInput" accept=".zip">
+    </label>
+    <button id="importCourseBtn" class="button primary" disabled>Import Course</button>
+    <span id="courseSpinner" style="display:none; margin-left:10px;">Uploading…</span>
+  </div>
+</div>
+
+<!-- Missing-refs warning (shown when refs aren't resolved) -->
+<div id="missingRefsWarning" style="display:none; margin-top:15px;">
+  <div class="alert-box warning">
+    <strong>Some trinket links could not be resolved:</strong>
+    <ul id="missingRefsList" style="margin-top:8px;"></ul>
+    <p style="margin-top:10px;">
+      Import the missing trinkets (Step 1) and try again, or
+      <button id="forceImportBtn" class="button tiny alert" style="margin:0 4px;">Import anyway</button>
+      to leave old trinket.io URLs intact (they will be patched automatically once those trinkets are imported).
+    </p>
+  </div>
+</div>
+
+<div id="courseResult" style="display:none; margin-top:15px;">
+  <div class="alert-box success">
+    Course imported successfully!
+    <a id="courseLink" href="#">View course →</a>
+  </div>
+</div>
+
+<div id="assetWarnings" style="display:none; margin-top:10px;">
+  <div class="alert-box warning">
+    <strong>Image hosting warning:</strong>
+    <ul id="assetWarningList" style="margin-top:6px;"></ul>
+    <p style="margin-top:6px; margin-bottom:0;">
+      Re-export from the original server and re-import to pick up a self-contained zip with embedded images.
+    </p>
+  </div>
+</div>
+
+<script type="text/javascript">
+(function() {
+  var $trinketFile   = $('#trinketZipInput');
+  var $trinketBtn    = $('#importTrinketsBtn');
+  var $trinketSpin   = $('#trinketSpinner');
+  var $courseFile    = $('#courseZipInput');
+  var $courseBtn     = $('#importCourseBtn');
+  var $courseSpin    = $('#courseSpinner');
+  var $courseName    = $('#courseNameInput');
+  var pendingCourseFile = null;
+
+  function showAlert(msg) {
+    $('#importAlertMsg').text(msg);
+    $('#importAlert').show();
+    $('#importSuccess').hide();
+  }
+
+  function showSuccess(msg) {
+    $('#importSuccessMsg').text(msg);
+    $('#importSuccess').show();
+    $('#importAlert').hide();
+    setTimeout(function() { $('#importSuccess').hide(); }, 6000);
+  }
+
+  // Enable buttons when files are selected
+  $trinketFile.on('change', function() {
+    $trinketBtn.prop('disabled', !this.files.length);
+  });
+
+  $courseFile.on('change', function() {
+    $courseBtn.prop('disabled', !this.files.length);
+    pendingCourseFile = this.files[0] || null;
+    $('#missingRefsWarning').hide();
+    $('#courseResult').hide();
+    $('#assetWarnings').hide();
+  });
+
+  // ── Trinket import ─────────────────────────────────────────────────────────
+  $trinketBtn.on('click', function() {
+    var file = $trinketFile[0].files[0];
+    if (!file) return;
+
+    var fd = new FormData();
+    fd.append('file', file);
+    if ($('#replaceExisting').prop('checked')) fd.append('replace', 'true');
+
+    $trinketBtn.prop('disabled', true);
+    $trinketSpin.show();
+    $('#trinketResult').hide();
+    $('#importAlert').hide();
+
+    $.ajax({
+      url         : '/api/imports/trinkets',
+      method      : 'POST',
+      data        : fd,
+      processData : false,
+      contentType : false
+    })
+    .done(function(resp) {
+      if (resp.data) {
+        var d = resp.data;
+        $('#trImported').text(d.imported);
+        $('#trUpdated').text(d.updated || 0);
+        $('#trSkipped').text(d.skipped);
+        $('#trFailed').text(d.failed);
+        $('#trPatched').text(d.patched || 0);
+        $('#trinketResult').show();
+        $('#importSuccessMsg').text('Trinket import complete: ' + d.imported + ' new, ' + (d.updated || 0) + ' updated, ' + d.skipped + ' skipped.');
+        $('#importSuccess').show();
+        $('#importAlert').hide();
+      } else {
+        showAlert(resp.error || 'Import failed.');
+      }
+    })
+    .fail(function(xhr) {
+      var msg = 'Upload failed.';
+      try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+      showAlert(msg);
+    })
+    .always(function() {
+      $trinketBtn.prop('disabled', false);
+      $trinketSpin.hide();
+    });
+  });
+
+  // ── Course import ──────────────────────────────────────────────────────────
+  function submitCourse(force) {
+    var file = pendingCourseFile || ($courseFile[0].files[0]);
+    if (!file) return;
+
+    var fd = new FormData();
+    fd.append('file', file);
+    if ($courseName.val()) fd.append('name', $courseName.val());
+    if (force) fd.append('force', 'true');
+
+    $courseBtn.prop('disabled', true);
+    $courseSpin.show();
+    $('#missingRefsWarning').hide();
+    $('#courseResult').hide();
+    $('#importAlert').hide();
+
+    $.ajax({
+      url         : '/api/imports/course',
+      method      : 'POST',
+      data        : fd,
+      processData : false,
+      contentType : false
+    })
+    .done(function(resp) {
+      if (!resp.data) { showAlert(resp.error || 'Import failed.'); return; }
+      var d = resp.data;
+
+      if (d.status === 'missing_refs') {
+        var $list = $('#missingRefsList').empty();
+        (d.missing || []).forEach(function(sc) {
+          $list.append('<li><code>' + sc + '</code></li>');
+        });
+        $('#missingRefsWarning').show();
+      } else if (d.status === 'ok') {
+        var href = d.url || ('/courses/' + d.courseId);
+        $('#courseLink').attr('href', href);
+        $('#courseResult').show();
+        showSuccess('Course imported successfully!');
+        if (d.warnings && d.warnings.length) {
+          var $wlist = $('#assetWarningList').empty();
+          d.warnings.forEach(function(w) { $wlist.append('<li>' + w + '</li>'); });
+          $('#assetWarnings').show();
+        } else {
+          $('#assetWarnings').hide();
+        }
+      } else {
+        showAlert(d.message || 'Unexpected response.');
+      }
+    })
+    .fail(function(xhr) {
+      var msg = 'Upload failed.';
+      try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+      showAlert(msg);
+    })
+    .always(function() {
+      $courseBtn.prop('disabled', false);
+      $courseSpin.hide();
+    });
+  }
+
+  $courseBtn.on('click', function() { submitCourse(false); });
+  $('#forceImportBtn').on('click', function() { submitCourse(true); });
+
+})();
+</script>

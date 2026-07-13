@@ -1528,5 +1528,38 @@ module.exports = [
     config : {
       auth: 'session'
     }
+  },
+  {
+    route : 'POST /api/imports/trinkets imports.importTrinkets',
+    config : {
+      auth: 'session',
+      payload : {
+        maxBytes  : 50 * 1024 * 1024,
+        multipart : { output: 'file' }
+      },
+      validate : {
+        payload : {
+          file    : Joi.any().required(),
+          replace : Joi.boolean().optional()
+        }
+      }
+    }
+  },
+  {
+    route : 'POST /api/imports/course imports.importCourse',
+    config : {
+      auth: 'session',
+      payload : {
+        maxBytes  : 50 * 1024 * 1024,
+        multipart : { output: 'file' }
+      },
+      validate : {
+        payload : {
+          file  : Joi.any().required(),
+          name  : Joi.string().max(140).optional(),
+          force : Joi.boolean().optional()
+        }
+      }
+    }
   }
 ]

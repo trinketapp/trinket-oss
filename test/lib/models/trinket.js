@@ -1,8 +1,15 @@
+process.env.NODE_ENV = 'test';
+
 var _        = require('underscore'),
     sinon    = require('sinon'),
     should   = require('chai').should(),
     crypto   = require('crypto'),
-    Interaction = require('../../../lib/models/interaction');
+    Trinket  = require('../../../lib/models/trinket');
+
+// The Trinket model resolves a global `Interaction` constructor at runtime
+// (findByIdAndUpdateMetrics). Expose it at load time so those tests can stub it
+// without booting the full app; this keeps the model tests self-contained.
+global.Interaction = require('../../../lib/models/interaction');
 
 describe('Trinket model', function(){
   describe('pre save hooks', function() {
@@ -52,7 +59,7 @@ describe('Trinket model', function(){
 
         Trinket.hooks.pre.save.createHash.call(trinket, function() {
           trinket.hash.should.eql(hash);
-          trinket.shortCode.should.eql(hash.substring(0, 10));
+          trinket.shortCode.should.eql(hash.substring(0, 12));
           update.calledWith(trinket.code + trinket.lang + trinket._owner + trinket._parent).should.be.true;
           update.calledWith(trinket.code + trinket.lang + trinket._owner + trinket._parent + now).should.be.true;
           cryptoStub.restore();
@@ -112,27 +119,28 @@ describe('Trinket model', function(){
     describe('findById', function() {
       it('should include the shortCode as a search criteria', function(done) {
         var doc     = 'foo';
-        var findOne = sinon.spy(function(criteria, cb){ cb(null, doc) });
+        // mongoose 6: findOne returns a promise; the model no longer passes a callback.
+        var findOne = sinon.spy(function(criteria){ return Promise.resolve(doc); });
         var scope   = { model : { findOne : findOne } };
         var query   = { shortCode : 'abc123' };
         var cb      = function(err, result) {
-          findOne.calledWithExactly(query, cb).should.be.true;
+          findOne.calledWithExactly(query).should.be.true;
           done();
         };
-        
+
         Trinket.classMethods.findById.call(scope, 'abc123', cb);
       });
 
       it('should return the results of the findOne call', function(done) {
         var doc     = 'foo';
-        var findOne = sinon.spy(function(criteria, cb){ cb(null, doc) });
+        var findOne = sinon.spy(function(criteria){ return Promise.resolve(doc); });
         var scope   = { model : { findOne : findOne } };
         var query   = { shortCode : 'abc123' };
         var cb      = function(err, result) {
           result.should.eql('foo');
           done();
         };
-        
+
         Trinket.classMethods.findById.call(scope, 'abc123', cb);
       });
     });
@@ -142,8 +150,9 @@ describe('Trinket model', function(){
       var callScope;
 
       before(function(done) {
-        var findByIdAndUpdate = sinon.spy(function(id, update, options, cb){
-          return cb(null, {
+        // mongoose 6: findByIdAndUpdate resolves a promise instead of taking a callback.
+        var findByIdAndUpdate = sinon.spy(function(id, update, options){
+          return Promise.resolve({
             _id : 'id',
             _owner : 'owner',
             lang : 'lang'
@@ -154,8 +163,9 @@ describe('Trinket model', function(){
 
         interactionStub = sinon.stub(global, 'Interaction', function(data) {
           return _.extend({
-            save : sinon.spy(function(cb) {
-              return cb(this);
+            // the model calls interaction.save() without a callback (promise-based)
+            save : sinon.spy(function() {
+              return Promise.resolve(this);
             })
           }, data);
         });
@@ -184,7 +194,7 @@ describe('Trinket model', function(){
               }
             }).should.be.true;
           })
-          .done(done);
+          .then(done, done);
       });
 
       it('should construct an interaction for the metric to be updated', function(done) {
@@ -199,7 +209,7 @@ describe('Trinket model', function(){
             }).should.be.true;
             interactionStub.returnValues[0].save.calledOnce.should.be.true;
           })
-          .done(done);
+          .then(done, done);
       });
     });
   });

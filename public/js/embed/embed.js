@@ -1161,12 +1161,22 @@ $('document').ready(function() {
             cloneable[key] = original[key];
 
             // remove comments
+            // code is either a JSON array of file objects or a plain source
+            // string (single-file trinkets); only the array form carries
+            // per-file comments to strip. JSON.parse on a plain string throws,
+            // which previously aborted the save/remix before it completed.
             if (key === "code") {
-              original_code = JSON.parse(cloneable[key]);
-              original_code = original_code.map(function(file) {
-                return _.omit(file, "comments");
-              });
-              cloneable[key] = JSON.stringify(original_code);
+              try {
+                original_code = JSON.parse(cloneable[key]);
+              } catch (e) {
+                original_code = null;
+              }
+              if (_.isArray(original_code)) {
+                original_code = original_code.map(function(file) {
+                  return _.omit(file, "comments");
+                });
+                cloneable[key] = JSON.stringify(original_code);
+              }
             }
           }
           $.extend(true, remix, cloneable);
