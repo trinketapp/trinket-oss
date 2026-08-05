@@ -416,9 +416,22 @@ function createRequest(flow, type, url) {
 }
 
 function Flow() {
-  this.agent      = server(app.listener);
+  // app.js's async-init refactor (Hapi 20) made `require('../../app.js')`
+  // export a Promise for the server rather than the server itself, so the
+  // raw http listener supertest() needs isn't available synchronously here
+  // the way `server(app.listener)` assumes. config.app.start is false in
+  // test config, so init() resolves almost immediately (no real network
+  // bind) — well before any test's before()/it() body runs and actually
+  // issues a request — but the resolution is still async, so `this.agent`
+  // can't be built at construction time; assign it once the promise settles.
+  var flow = this;
+  this.agent      = null;
   this.activeUser = 'user';
   this.cookies    = {};
+
+  Promise.resolve(app).then(function(hapiServer) {
+    flow.agent = server(hapiServer.listener);
+  });
 
   // bind all of the methods for ease of use in before/after
   // blocks in the test...
