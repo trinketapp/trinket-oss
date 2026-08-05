@@ -556,6 +556,20 @@ module.exports = [
     }
   },
   {
+    route : 'POST /api/courses/{courseId}/exports/submissions course.exportCourseSubmissions',
+    config : {
+      auth: 'session',
+      pre : ['course(params.courseId)']
+    }
+  },
+  {
+    route : 'POST /api/courses/{courseId}/materials/{materialId}/exports/submissions course.exportAssignmentSubmissions',
+    config : {
+      auth: 'session',
+      pre : ['course(params.courseId)']
+    }
+  },
+  {
     route : 'GET /api/submissions/{materialId} course.getUserSubmissionsForMaterial',
     config : {
       auth: 'session'
