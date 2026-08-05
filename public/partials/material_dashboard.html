@@ -9,6 +9,13 @@
       </nav>
     </section>
     <div class="right">
+      <button class="button small" ng-if="canViewSubmissions" ng-click="exportStudentWork()" ng-disabled="studentWorkExport.running" title="Download all student submissions and feedback for this assignment as a zip file">
+        <i ng-class="studentWorkExport.running ? 'fa fa-circle-o-notch fa-spin' : 'fa fa-download'"></i> Download student work
+      </button>
+      <a ng-if="studentWorkExport.ready" ng-href="{{ studentWorkExport.downloadUrl }}" class="button small success">
+        <i class="fa fa-check"></i> Download ready
+      </a>
+      <span ng-if="studentWorkExport.error" class="alert-box alert">{{ studentWorkExport.error }}</span>
       <a ng-disabled="!prev.assignment" ng-class="{disabled:!prev.assignment}" ng-click="viewAssignment(prev.assignment.lesson, prev.assignment.material)" class="button small">Previous</a>
       <a ng-disabled="!next.assignment" ng-class="{disabled:!next.assignment}" ng-click="viewAssignment(next.assignment.lesson, next.assignment.material)" class="button small">Next</a>
     </div>
