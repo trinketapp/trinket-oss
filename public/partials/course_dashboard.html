@@ -16,6 +16,13 @@
               <a ng-click="changeView(key)"><i class="{{ option.class }}"></i> <span class="show-for-large-up">View {{ option.label }}</span></a>
             </li>
           </ul>
+          <button class="button small" ng-if="canViewSubmissions" ng-click="exportStudentWork()" ng-disabled="studentWorkExport.running" title="Download all student submissions and feedback for this course as a zip file">
+            <i ng-class="studentWorkExport.running ? 'fa fa-circle-o-notch fa-spin' : 'fa fa-download'"></i> <span class="show-for-large-up">Download student work</span>
+          </button>
+          <a ng-if="studentWorkExport.ready" ng-href="{{ studentWorkExport.downloadUrl }}" class="button small success">
+            <i class="fa fa-check"></i> Download ready
+          </a>
+          <span ng-if="studentWorkExport.error" class="alert-box alert">{{ studentWorkExport.error }}</span>
         </section>
       </section>
     </section>
